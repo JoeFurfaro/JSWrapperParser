@@ -1,0 +1,138 @@
+import { IncomingMessage } from "http";
+import { DEFAULT_WRAPPER_CONFIG, DEFAULT_FIELD_CONFIG, DEFAULT_CONFIG } from "./defaults";
+
+export const _prepConfig = c => {
+    const config = { ...DEFAULT_CONFIG, ...c }
+    const preppedConfig = { parser: config.parser, wrappers: {} };
+    Object.keys(config.wrappers).forEach(wrapper => {
+        const preppedWrapper = { ...DEFAULT_WRAPPER_CONFIG };
+        Object.keys(config.wrappers[wrapper].fields).forEach(field => {
+            preppedWrapper.fields[field] = { ...DEFAULT_FIELD_CONFIG, ...config.wrappers[wrapper].fields[field] };
+        });
+        preppedWrapper.import = { ...preppedWrapper.import, ...config.wrappers[wrapper].import }
+        preppedConfig.wrappers[wrapper] = preppedWrapper;
+    });
+    return preppedConfig;
+};
+
+export const _validateConfig = (config) => {
+    return new Promise((resolve, reject) => {
+        Object.keys(config.wrappers).forEach(wrapper => {
+            if (config.wrappers[wrapper].import.module === null)
+                return reject("Every wrapper field must specify an import module!");
+        });
+        resolve();
+    });
+};
+
+export const _parseImports = (module) => {
+    return module.body.filter(token =>
+        token.type === "ImportDeclaration" && token.specifiers.length > 0
+    ).map(token => {
+        if (token.specifiers[0].type === "ImportDefaultSpecifier")
+            return { module: token.source.value, default: token.specifiers[0].local.value, named: [] };
+        return {
+            module: token.source.value, default: null, named: token.specifiers.map(spec => {
+                return spec.imported === null ? { name: spec.local.value, as: spec.local.value } : { name: spec.imported.value, as: spec.local.value }
+            })
+        };
+    });
+};
+
+export const _parseExports = (module) => {
+    return module.body.filter(token =>
+        (token.type === "ExportDefaultExpression" &&
+            token.expression.type === "CallExpression" &&
+            token.expression.callee.type === "Identifier") ||
+        (token.type === "ExportDeclaration" &&
+            token.declaration.type === "VariableDeclaration" &&
+            token.declaration.declarations[0].type === "VariableDeclarator" &&
+            token.declaration.declarations[0].id.type === "Identifier" &&
+            token.declaration.declarations[0].init?.type === "CallExpression")
+    ).map(token => {
+        if (token.type == "ExportDefaultExpression")
+            return { wrapper: token.expression.callee.value, name: null, default: true, args: token.expression.arguments };
+        else if (token.type === "ExportDeclaration")
+            return { wrapper: token.declaration.declarations[0].init.callee.value, name: token.declaration.declarations[0].id.value, default: false, args: token.declaration.declarations[0].init.arguments };
+    });
+};
+
+const PROP_TYPES = {
+    StringLiteral: "string",
+    NumericLiteral: "number",
+}
+
+const _propType = (prop) => {
+    if (Object.keys(PROP_TYPES).includes(prop.value.type))
+        return PROP_TYPES[prop.value.type];
+    return "unknown";
+}
+
+const _propValue = (prop) => {
+    if (_propType(prop) === "string")
+        return prop.value.value;
+    if (_propType(prop) === "number")
+        return prop.value.value;
+    return null;
+}
+
+export const _match = (imports, exports, config) => {
+    return new Promise((resolve, reject) => {
+        const IMPORT_DICT = {};
+
+        for (const imp of imports) {
+            if (imp.default !== null) {
+                if (Object.keys(IMPORT_DICT).includes(imp.default)) return reject(`Found multiple imports using the name '${imp.default}'`);
+                IMPORT_DICT[imp.default] = { default: true, name: null, module: imp.module };
+            } else {
+                for (const named of imp.named) {
+                    if (Object.keys(IMPORT_DICT).includes(named.as)) return reject(`Found multiple imports using the name '${named.as}'`);
+                    IMPORT_DICT[named.as] = { default: false, name: named.name, module: imp.module };
+                }
+            }
+        }
+
+        const PARSED = [];
+
+        for (const exp of exports) {
+            if (Object.keys(IMPORT_DICT).includes(exp.wrapper)) {
+                const imp = IMPORT_DICT[exp.wrapper];
+                const MATCHING_WRAPPERS = Object.keys(config.wrappers).map(wrapperKey => {
+                    const wrapper = config.wrappers[wrapperKey];
+                    if (wrapper.import.module === imp.module && ((wrapper.import.default && imp.default) || (!wrapper.import.default && wrapperKey === imp.name)))
+                        return { name: wrapperKey, ...wrapper };
+                    return null;
+                }).filter(x => x !== null);
+                if (MATCHING_WRAPPERS.length === 0) continue;
+                const wrapper = MATCHING_WRAPPERS[0];
+                if (exp.args.length > 0 && exp.args[0].expression.type === "ObjectExpression") {
+                    const props = {};
+                    exp.args[0].expression.properties.forEach(prop => {
+                        props[prop.key.value] = { type: _propType(prop), value: _propValue(prop) }
+                    });
+                    const data = {};
+                    if (Object.keys(wrapper.fields).every(fieldName => {
+                        const field = wrapper.fields[fieldName];
+                        if (field.required && !Object.keys(props).includes(fieldName))
+                            reject(`Missing required field '${fieldName}' in declaration of '${exp.wrapper}'!`);
+                        if (!Object.keys(props).includes(fieldName) && !field.required)
+                            return true;
+                        if (Object.keys(props).includes(fieldName)) {
+                            if (field.type === "any" || field.type === props[fieldName].type) {
+                                data[fieldName] = props[fieldName].value;
+                                return true;
+                            } else {
+                                reject(`Type mismatch on field '${fieldName}' in declaration of '${exp.wrapper}'! Type '${field.type}' was expected but type '${props[fieldName].type}' was given!`);
+                            }
+                        }
+                        return false;
+                    })) {
+                        PARSED.push({ wrapper: exp.wrapper, name: exp.name, default: exp.default, fields: data });
+                    }
+                }
+            }
+        }
+
+        resolve(PARSED);
+    });
+};
