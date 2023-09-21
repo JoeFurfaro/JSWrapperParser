@@ -7,5 +7,4 @@ export const specificPerson = Person({
 
 export default Person({
     name: "Joe",
-    age: 3
 });
