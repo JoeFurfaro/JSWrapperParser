@@ -1,17 +1,19 @@
-import { parseTopLevelWrappers } from ".";
+import { parseWrappers } from ".";
 
 const config = {
-    wrappers: {
-        Person: {
-            fields: {
-                name: { type: "string" },
-                age: { type: "number", required: false }
-            },
-            import: { module: "mymodule" }
-        },
+  wrappers: {
+    Person: {
+      fields: {
+        name: { type: "string" },
+        age: { type: "number", required: false },
+      },
+      import: { module: "mymodule" },
     },
-}
+  },
+};
 
-parseTopLevelWrappers("input/test.jsx", config).then(parsed => {
+parseWrappers("input/test.jsx", config)
+  .then((parsed) => {
     console.log(parsed);
-}).catch(e => console.log(e));
+  })
+  .catch((e) => console.log(e));
