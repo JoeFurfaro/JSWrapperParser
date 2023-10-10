@@ -1,9 +1,9 @@
 import { Person } from "mymodule";
 
-export const specificPerson = Person({
-  name: "Wes",
-  age: 20,
-});
+// export const specificPerson = Person({
+//   name: "Wes",
+//   age: 20,
+// });
 
 // export default Person({
 //   name: "Joe",

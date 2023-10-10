@@ -25,13 +25,11 @@ const parseFile = (path, config) => {
 const mergeResults = (inputs) => {
   const merged = {};
   for(const input of inputs) {
-    console.log(input);
     for(const key of Object.keys(input)) {
       if (Object.keys(merged).includes(key)) merged[key] = merged[key].concat(input[key]);
       else merged[key] = input[key];
     }
   }
-  console.log(merged);
   return merged;
 };
 
@@ -42,7 +40,7 @@ export const parseWrappers = (file, config = {}) => {
     const listing = fs.readdirSync(file, {withFileTypes: true});
     let merged = {};
     for(const internal_file of listing) {
-      if (['.js', '.jsx', '.ts', '.tsx'].includes(path.extname(internal_file.name)) || fs.lstatSync(path.join(file, internal_file.name)).isDirectory()) {
+      if (!internal_file.name.startsWith(".") && (['.js', '.jsx', '.ts', '.tsx'].includes(path.extname(internal_file.name)) || fs.lstatSync(path.join(file, internal_file.name)).isDirectory())) {
           let parsed = parseWrappers(path.join(file, internal_file.name), config);
           merged = mergeResults([merged, parsed]);
       }

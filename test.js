@@ -6,6 +6,7 @@ const config = {
       fields: {
         name: { type: "string" },
         age: { type: "number", required: false },
+        thing: { type: "any", required: false }
       },
       import: { module: "mymodule" },
     },
@@ -19,6 +20,4 @@ const config = {
 //   .catch((e) => console.log(e));
 
 const parsed = parseWrappers("input/", config);
-console.log();
-console.log();
 console.log(parsed);
