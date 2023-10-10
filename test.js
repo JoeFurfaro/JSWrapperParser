@@ -5,16 +5,20 @@ const config = {
     Person: {
       fields: {
         name: { type: "string" },
-        age: { type: "number", required: false, default: 3 },
-        devices: {type: "array", required: false, default: [] }
+        age: { type: "number", required: false },
       },
       import: { module: "mymodule" },
     },
   },
 };
 
-parseWrappers("input/test.jsx", config)
-  .then((parsed) => {
-    console.log(JSON.stringify(parsed))
-  })
-  .catch((e) => console.log(e));
+// parseWrappers("input/", config)
+//   .then((parsed) => {
+//     console.log(JSON.stringify(parsed))
+//   })
+//   .catch((e) => console.log(e));
+
+const parsed = parseWrappers("input/", config);
+console.log();
+console.log();
+console.log(parsed);

@@ -26,13 +26,14 @@ export const _prepConfig = (c) => {
 };
 
 export const _validateConfig = (config) => {
-  return new Promise((resolve, reject) => {
+  try {
     Object.keys(config.wrappers).forEach((wrapper) => {
       if (config.wrappers[wrapper].import.module === null)
-        return reject("Every wrapper field must specify an import module!");
+        throw "Every wrapper field must specify an import module!";
     });
-    resolve();
-  });
+  } catch (err) {
+    throw { type: "InvalidConfigError", message: err };
+  }
 };
 
 export const _parseImports = (module) => {
@@ -115,16 +116,13 @@ const _propValue = (v) => {
   return null;
 };
 
-export const _match = (imports, exports, config) => {
-  return new Promise((resolve, reject) => {
-    const IMPORT_DICT = {};
+export const _match = (imports, exports, config, sourceFile) => {
+  const IMPORT_DICT = {};
 
     for (const imp of imports) {
       if (imp.default !== null) {
         if (Object.keys(IMPORT_DICT).includes(imp.default))
-          return reject(
-            `Found multiple imports using the name '${imp.default}'`
-          );
+          throw `Found multiple imports using the name '${imp.default}'`;
         IMPORT_DICT[imp.default] = {
           default: true,
           name: null,
@@ -133,9 +131,7 @@ export const _match = (imports, exports, config) => {
       } else {
         for (const named of imp.named) {
           if (Object.keys(IMPORT_DICT).includes(named.as))
-            return reject(
-              `Found multiple imports using the name '${named.as}'`
-            );
+          throw `Found multiple imports using the name '${named.as}'`;
           IMPORT_DICT[named.as] = {
             default: false,
             name: named.name,
@@ -181,9 +177,7 @@ export const _match = (imports, exports, config) => {
             Object.keys(wrapper.fields).every((fieldName) => {
               const field = wrapper.fields[fieldName];
               if (field.required && !Object.keys(props).includes(fieldName))
-                reject(
-                  `Missing required field '${fieldName}' in declaration of '${exp.wrapper}'!`
-                );
+                throw `Missing required field '${fieldName}' in declaration of '${exp.wrapper}'!`;
               if (!Object.keys(props).includes(fieldName) && !field.required) {
                 data[fieldName] = field.default;
                 return true;
@@ -196,9 +190,7 @@ export const _match = (imports, exports, config) => {
                   data[fieldName] = props[fieldName].value;
                   return true;
                 } else {
-                  reject(
-                    `Type mismatch on field '${fieldName}' in declaration of '${exp.wrapper}'! Type '${field.type}' was expected but type '${props[fieldName].type}' was given!`
-                  );
+                  throw `Type mismatch on field '${fieldName}' in declaration of '${exp.wrapper}'! Type '${field.type}' was expected but type '${props[fieldName].type}' was given!`;
                 }
               }
               return false;
@@ -206,6 +198,7 @@ export const _match = (imports, exports, config) => {
           ) {
             PARSED[exp.wrapper].push({
               name: exp.name,
+              sourceFile: sourceFile,
               default: exp.default,
               fields: data,
             });
@@ -214,6 +207,5 @@ export const _match = (imports, exports, config) => {
       }
     }
 
-    resolve(PARSED);
-  });
+    return PARSED;
 };

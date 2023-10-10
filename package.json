@@ -1,7 +1,8 @@
 {
-  "name": "jsparse",
+  "name": "js-wrapper-parse",
   "module": "index.js",
   "type": "module",
+  "version": "1.0.0",
   "devDependencies": {
     "bun-types": "latest"
   },
