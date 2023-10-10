@@ -6,6 +6,8 @@ const config = {
       fields: {
         name: { type: "string" },
         age: { type: "number", required: false },
+        isMarried: { type: "boolean", required: true },
+        permissions: { type: "array", required: true }
       },
       import: { module: "mymodule" },
     },
@@ -14,6 +16,6 @@ const config = {
 
 parseWrappers("input/test.jsx", config)
   .then((parsed) => {
-    console.log(parsed);
+    console.log(JSON.stringify(parsed))
   })
   .catch((e) => console.log(e));

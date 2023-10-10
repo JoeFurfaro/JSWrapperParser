@@ -94,17 +94,24 @@ export const _parseExports = (module) => {
 const PROP_TYPES = {
   StringLiteral: "string",
   NumericLiteral: "number",
+  BooleanLiteral: "boolean",
+  ArrayExpression: "array",
 };
 
-const _propType = (prop) => {
-  if (Object.keys(PROP_TYPES).includes(prop.value.type))
-    return PROP_TYPES[prop.value.type];
+const _propType = (v) => {
+  if (Object.keys(PROP_TYPES).includes(v.type))
+    return PROP_TYPES[v.type];
   return "unknown";
 };
 
-const _propValue = (prop) => {
-  if (_propType(prop) === "string") return prop.value.value;
-  if (_propType(prop) === "number") return prop.value.value;
+const _propValue = (v) => {
+  if (_propType(v) === "string") return v.value;
+  if (_propType(v) === "number") return v.value;
+  if (_propType(v) === "boolean") return v.value;
+  if (_propType(v) === "array") {
+    const KNOWN_TYPES = v.elements.filter(elem => _propType(elem.expression) !== "unknown");
+    return KNOWN_TYPES.map(elem => _propValue(elem.expression));
+  }
   return null;
 };
 
@@ -165,8 +172,8 @@ export const _match = (imports, exports, config) => {
           const props = {};
           exp.args[0].expression.properties.forEach((prop) => {
             props[prop.key.value] = {
-              type: _propType(prop),
-              value: _propValue(prop),
+              type: _propType(prop.value),
+              value: _propValue(prop.value),
             };
           });
           const data = {};
