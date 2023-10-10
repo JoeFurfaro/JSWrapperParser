@@ -14,4 +14,5 @@ export const DEFAULT_WRAPPER_CONFIG = {
 export const DEFAULT_FIELD_CONFIG = {
   type: "any",
   required: true,
+  default: null,
 };

@@ -5,9 +5,8 @@ const config = {
     Person: {
       fields: {
         name: { type: "string" },
-        age: { type: "number", required: false },
-        isMarried: { type: "boolean", required: true },
-        permissions: { type: "array", required: true }
+        age: { type: "number", required: false, default: 3 },
+        devices: {type: "array", required: false, default: [] }
       },
       import: { module: "mymodule" },
     },

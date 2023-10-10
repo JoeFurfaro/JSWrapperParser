@@ -184,8 +184,10 @@ export const _match = (imports, exports, config) => {
                 reject(
                   `Missing required field '${fieldName}' in declaration of '${exp.wrapper}'!`
                 );
-              if (!Object.keys(props).includes(fieldName) && !field.required)
+              if (!Object.keys(props).includes(fieldName) && !field.required) {
+                data[fieldName] = field.default;
                 return true;
+              }
               if (Object.keys(props).includes(fieldName)) {
                 if (
                   field.type === "any" ||
