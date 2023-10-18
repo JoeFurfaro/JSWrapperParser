@@ -33,15 +33,15 @@ const mergeResults = (inputs) => {
   return merged;
 };
 
-export const parseWrappers = (file, config = {}) => {
-  const CONFIG = _prepConfig(config);
+export const parseWrappers = (file, config = {}, first = true) => {
+  const CONFIG = first ? _prepConfig(config) : config;
 
   if (fs.lstatSync(file).isDirectory()) {
     const listing = fs.readdirSync(file, {withFileTypes: true});
     let merged = {};
     for(const internal_file of listing) {
       if (!internal_file.name.startsWith(".") && (['.js', '.jsx', '.ts', '.tsx'].includes(path.extname(internal_file.name)) || fs.lstatSync(path.join(file, internal_file.name)).isDirectory())) {
-          let parsed = parseWrappers(path.join(file, internal_file.name), config);
+          let parsed = parseWrappers(path.join(file, internal_file.name), CONFIG, false);
           merged = mergeResults([merged, parsed]);
       }
     }

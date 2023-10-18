@@ -6,10 +6,11 @@ import {
 } from "./defaults";
 
 export const _prepConfig = (c) => {
-  const config = { ...DEFAULT_CONFIG, ...c };
+  const config = { ...JSON.parse(JSON.stringify(DEFAULT_CONFIG)), ...c };
   const preppedConfig = { parser: config.parser, wrappers: {} };
-  Object.keys(config.wrappers).forEach((wrapper) => {
-    const preppedWrapper = { ...DEFAULT_WRAPPER_CONFIG };
+  const WRAPPERS = Object.keys(config.wrappers);
+  WRAPPERS.forEach((wrapper) => {
+    const preppedWrapper = JSON.parse(JSON.stringify(DEFAULT_WRAPPER_CONFIG));
     Object.keys(config.wrappers[wrapper].fields).forEach((field) => {
       preppedWrapper.fields[field] = {
         ...DEFAULT_FIELD_CONFIG,

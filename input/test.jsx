@@ -1,7 +1,11 @@
-import { Person } from "mymodule";
+import { Person, Wes } from "mymodule";
 
 export const specificPerson = Person({
-  name: "Joe",
+  name: "Yea",
+});
+
+export const specificPerson = Wes({
+  thing: "boom",
 });
 
 // export default Person({
